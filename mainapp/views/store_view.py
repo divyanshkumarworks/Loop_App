@@ -8,7 +8,7 @@ import csv
 import tempfile
 import os
 import threading
-
+from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 
@@ -19,51 +19,58 @@ class StoreView(View):
 		store_report = StoreReport.objects.create()
 
 		def create_report_thread(report_id):
-			store = Store.objects.all()
+			try:
+				store = Store.objects.all()[:200]
+				i = 1
+				csv_data = []
+				for entry in store:
+					
+					print(i)
+					i += 1
 
-			csv_data = []
-			for entry in store:
-				
-				#get stores status
-				tz = entry.timezone_id.timezone if entry.timezone_id.timezone else 'America/Chicago'
-				target_timezone = pytz_timezone(tz)
+					#get stores status
+					tz = entry.timezone_id.timezone if entry.timezone_id.timezone else 'America/Chicago'
+					target_timezone = pytz_timezone(tz)
 
-				utc_time = StoreStatus.objects.all().order_by('-timestamp_utc').first().timestamp_utc
-				local_time = utc_time.astimezone(target_timezone)
-				current_day = local_time.weekday()
-				current_time = local_time.time()
+					utc_time = StoreStatus.objects.all().order_by('-timestamp_utc').first().timestamp_utc
+					local_time = utc_time.astimezone(target_timezone)
+					current_day = local_time.weekday()
+					current_time = local_time.time()
 
-				last_hour_data = get_last_hour_record(entry, utc_time, current_day, current_time)
+					last_hour_data = get_last_hour_record(entry, utc_time, current_day, current_time)
 
-				last_day_data = get_last_day_record(entry, utc_time, current_day, current_time)
+					last_day_data = get_last_day_record(entry, utc_time, current_day, current_time)
 
-				last_week_data = get_last_week_record(entry, utc_time, current_day, current_time)
+					last_week_data = get_last_week_record(entry, utc_time, current_day, current_time)
 
-				csv_data.append(
-					[
-						entry.store_id, 
-						last_hour_data["up_time"], 
-						last_day_data["up_time"], 
-						last_week_data["up_time"], 
-						last_hour_data["down_time"], 
-						last_day_data["down_time"], 
-						last_week_data["down_time"]
-					]
-				)
+					csv_data.append(
+						[
+							entry.store_id, 
+							last_hour_data["up_time"], 
+							last_day_data["up_time"], 
+							last_week_data["up_time"], 
+							last_hour_data["down_time"], 
+							last_day_data["down_time"], 
+							last_week_data["down_time"]
+						]
+					)
 
 
-			with tempfile.TemporaryDirectory() as temp_file:
-				temp_file_path = os.path.join(temp_file, f"{report_id}.csv")
+				with tempfile.TemporaryDirectory() as temp_dir:
+					temp_file_path = os.path.join(temp_dir, f"{report_id}.csv")
 
-				with open(temp_file_path, "w", newline='') as csv_file:
-					csv_writer = csv.writer(csv_file)
-					csv_writer.writerow(["store_id", "uptime_last_hour(in minutes)", "uptime_last_day(in hours)", "update_last_week(in hours)", "downtime_last_hour(in minutes)", "downtime_last_day(in hours)", "downtime_last_week(in hours)"])
-					for data in csv_data:
-						csv_writer.writerow(data)
+					with open(temp_file_path, "w", newline='') as csv_file:
+						csv_writer = csv.writer(csv_file)
+						csv_writer.writerow(["store_id", "uptime_last_hour(in minutes)", "uptime_last_day(in hours)", "update_last_week(in hours)", "downtime_last_hour(in minutes)", "downtime_last_day(in hours)", "downtime_last_week(in hours)"])
+						for data in csv_data:
+							csv_writer.writerow(data)
 
-				store_report.report_created.save(f"{report_id}.csv", open(temp_file_path, "rb"))
-				store_report.report_status = "Completed"
-				store_report.save()
+					store_report.report_created.save(f"{report_id}.csv", open(temp_file_path, "rb"))
+					store_report.report_status = "Completed"
+					store_report.save()
+			
+			except Exception as error:
+				return JsonResponse({'messgae': str(error)}, status=500)
 
 
 		thread = threading.Thread(target=create_report_thread, args=(store_report.id,))
