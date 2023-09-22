@@ -19,7 +19,6 @@ def get_last_hour_record(store, utc_time, current_day, current_time):
 	last_hour_record = store.store_status.filter(timestamp_utc__gte=utc_time - datetime.timedelta(hours=1)).order_by('timestamp_utc')
 
 	if last_hour_record:
-		print("status", last_hour_record[0].status)
 		if last_hour_record[0].status == 1:
 			last_hour_data["up_time"] = 60
 		else:
@@ -56,7 +55,7 @@ def get_last_day_record(store, utc_time, current_day, current_time):
 			else:
 				last_day_data['down_time'] += 1
 
-		return last_day_data
+	return last_day_data
 
 
 def get_last_week_record(store, utc_time, current_day, current_time):
@@ -72,7 +71,7 @@ def get_last_week_record(store, utc_time, current_day, current_time):
 	if not is_store_open:
 		return last_week_data
 
-	last_week_record = store.store_status.filter(timestamp_utc__gte=utc_time - datetime.timedelta(days=7)).order_by('timestamp_utc')
+	last_week_record = store.store_status.filter(timestamp_utc__gte=utc_time - datetime.timedelta(weeks=1)).order_by('timestamp_utc')
 	if last_week_record:
 		for record in last_week_record:
 			is_in_store_hours = store.store_hours.filter(
@@ -87,4 +86,4 @@ def get_last_week_record(store, utc_time, current_day, current_time):
 			else:
 				last_week_data['down_time'] += 1
 
-		return last_week_data
+	return last_week_data
