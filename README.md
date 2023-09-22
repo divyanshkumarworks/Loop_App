@@ -9,15 +9,67 @@ Loop is responsible for monitoring the online status of multiple restaurants acr
 ## Demo
 ![loopapp](https://github.com/divyanshkumarworks/Loop_App/assets/134360630/aa77bd3f-5409-4aa9-9c27-a5cf1b6be08e)
 
+## Getting Started: 🚀
+
+Follow these instructions to get a copy of the project up and running on your local machine for development and testing purposes.
+
+### Prerequisites 📋
+1. first of all, You need to install python for running pip command
+2. create a project folder
+3. setup Postgresql in your computer  
+
+### Local Development
+1. Clone the repository inside this folder
+```bash
+https://github.com/divyanshkumarworks/Loop_App.git
+```
+
+2. Install Dependencies
+```bash
+pip3 install -r requirements.txt
+```
+
+5. Run database migrations using:
+```bash
+python manage.py makemigrations
+
+python manage.py migrate
+```
+it will create the database schemas, tables and relationships. 
+
+6. And then run:
+```bash
+python manage.py runserver
+```
+this command will run the local server. 
+
 ## API Endpoints
 
-1. /trigger_report endpoint that will trigger report generation from the data provided (stored in DB)
+1. `/trigger_report` triggers report generation from the data provided (stored in DB)
     1. No input 
-    2. Output - report_id (random string) 
-    3. report_id will be used for polling the status of report completion
-2. /get_report endpoint that will return the status of the report or the csv
+    2. Output - report_id (random string), report_id is used for polling the status of report completion 
+    
+    **Request/Response**
+    ```bash
+    http://127.0.0.1:8000/trigger_report
+
+    {
+        "report_id": 14
+    }
+    ```
+3. `/get_report` returns the status of the report or the csv
     1. Input - report_id
     2. Output
         - if report generation is not complete, return “Running” as the output
         - if report generation is complete, return “Complete” along with the CSV file with the schema described above.
-        - if any kind of error occurred in between the process and not able to complete the request, it returns “Error occurred” as the output
+        - if any kind of error occurs in between the process and the request is not completed, it returns “Error occurred” as the output
+
+    **Request/Response**
+    ```bash
+    http://127.0.0.1:8000/trigger_report/14
+
+    {
+        "status": "Complete",
+        "csv_file": "C:\\Users\\rishu\\projects\\Loop_App\\media\\reports/14.csv"
+    }
+    ```
