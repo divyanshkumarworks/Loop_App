@@ -20,7 +20,7 @@ class StoreView(View):
 
 		def create_report_thread(report_id):
 			try:
-				store = Store.objects.all()[:200]
+				store = Store.objects.all()[:100]
 				i = 1
 				csv_data = []
 				for entry in store:
@@ -69,9 +69,9 @@ class StoreView(View):
 					store_report.report_status = "Completed"
 					store_report.save()
 			
-			except Exception as error:
-				return JsonResponse({'messgae': str(error)}, status=500)
-
+			except:
+				store_report.report_status = "Error"
+				store_report.save()
 
 		thread = threading.Thread(target=create_report_thread, args=(store_report.id,))
 		thread.start()
@@ -88,5 +88,7 @@ class StoreView(View):
 		if store_report.report_status == "Completed":
 			report_url = os.path.join(settings.MEDIA_ROOT, store_report.report_created.name)
 			return JsonResponse({'status': 'Complete', 'csv_file': report_url}, status=200)
-		else:
+		elif store_report.report_status == "Running":
 			return JsonResponse({'status': 'Running'}, status=200)
+		else:
+			return JsonResponse({'status': 'Error Occurred'}, status=500)
